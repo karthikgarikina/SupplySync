@@ -1,0 +1,55 @@
+import django.db.models.deletion
+from django.conf import settings
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+    initial = True
+
+    dependencies = [
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+        ("products", "0001_initial"),
+        ("warehouses", "0001_initial"),
+        ("core", "0001_create_schema"),
+    ]
+
+    operations = [
+        migrations.CreateModel(
+            name="SalesOrder",
+            fields=[
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("is_deleted", models.BooleanField(default=False)),
+                ("order_number", models.CharField(max_length=30, unique=True)),
+                ("customer_name", models.CharField(max_length=200)),
+                ("customer_email", models.EmailField(max_length=254)),
+                ("customer_phone", models.CharField(max_length=20)),
+                ("shipping_address", models.TextField()),
+                ("status", models.CharField(choices=[("PENDING", "Pending"), ("CONFIRMED", "Confirmed"), ("PROCESSING", "Processing"), ("DISPATCHED", "Dispatched"), ("DELIVERED", "Delivered"), ("CANCELLED", "Cancelled"), ("RETURNED", "Returned")], max_length=30)),
+                ("total_amount", models.DecimalField(decimal_places=2, default=0, max_digits=14)),
+                ("dispatched_at", models.DateTimeField(blank=True, null=True)),
+                ("delivered_at", models.DateTimeField(blank=True, null=True)),
+                ("notes", models.TextField(blank=True, null=True)),
+                ("created_by", models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to=settings.AUTH_USER_MODEL)),
+                ("warehouse", models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to="warehouses.warehouse")),
+            ],
+            options={"db_table": "sales_orders"},
+        ),
+        migrations.CreateModel(
+            name="SalesOrderItem",
+            fields=[
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("is_deleted", models.BooleanField(default=False)),
+                ("quantity", models.IntegerField()),
+                ("unit_price", models.DecimalField(decimal_places=2, max_digits=12)),
+                ("total_price", models.DecimalField(decimal_places=2, max_digits=14)),
+                ("product", models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to="products.product")),
+                ("sales_order", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="items", to="sales_orders.salesorder")),
+            ],
+            options={"db_table": "sales_order_items"},
+        ),
+    ]
+
