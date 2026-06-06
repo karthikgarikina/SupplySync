@@ -161,6 +161,9 @@ Email: garikinakarthik459@gmail.com
 Password: Password1!
 ```
 
+## Video Demo
+https://www.youtube.com/watch?v=TFij-SXhoJs
+
 ## Authentication
 
 Register a user:
