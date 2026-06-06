@@ -19,6 +19,7 @@ class InventoryAdjustView(APIView):
     """Adjust inventory for a product at a warehouse."""
 
     permission_classes = [IsWarehouseManagerOrAdminOrStaff]
+    serializer_class = InventoryAdjustSerializer
 
     @extend_schema(request=InventoryAdjustSerializer, responses=InventoryTransactionSerializer)
     def post(self, request):
@@ -32,6 +33,7 @@ class InventoryTransferView(APIView):
     """Transfer inventory between two warehouses."""
 
     permission_classes = [IsWarehouseManagerOrAdmin]
+    serializer_class = InventoryTransferSerializer
 
     @extend_schema(request=InventoryTransferSerializer)
     def post(self, request):
@@ -52,6 +54,7 @@ class LowStockAlertView(APIView):
     """Return cached low-stock alerts."""
 
     permission_classes = [IsWarehouseManagerOrAdmin]
+    serializer_class = LowStockAlertSerializer
 
     def get(self, request):
         serializer = LowStockAlertSerializer(services.get_low_stock_alerts(), many=True)
@@ -63,10 +66,10 @@ class WarehouseInventoryView(APIView):
 
     permission_classes = [IsWarehouseManagerOrAdminOrStaff]
     pagination_class = StandardResultsPagination
+    serializer_class = InventorySnapshotSerializer
 
     def get(self, request, warehouse_id):
         paginator = self.pagination_class()
         page = paginator.paginate_queryset(services.get_warehouse_inventory(warehouse_id), request, view=self)
         serializer = InventorySnapshotSerializer(page, many=True)
         return paginator.get_paginated_response(serializer.data)
-

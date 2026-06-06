@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -13,12 +14,14 @@ class SupplierListCreateView(APIView):
     """List suppliers or create a supplier."""
 
     pagination_class = StandardResultsPagination
+    serializer_class = SupplierSerializer
 
     def get_permissions(self):
         if self.request.method == "POST":
             return [IsProcurementManagerOrAdmin()]
         return [IsAuthenticated()]
 
+    @extend_schema(operation_id="supplier_list")
     def get(self, request):
         queryset = services.list_suppliers(request.query_params.dict(), 1, self.pagination_class.page_size)
         paginator = self.pagination_class()
@@ -37,7 +40,9 @@ class SupplierDetailView(APIView):
     """Retrieve, update, or soft delete a supplier."""
 
     permission_classes = [IsProcurementManagerOrAdmin]
+    serializer_class = SupplierSerializer
 
+    @extend_schema(operation_id="supplier_retrieve")
     def get(self, request, pk):
         return Response(SupplierSerializer(services.get_supplier_by_id(pk)).data, status=status.HTTP_200_OK)
 
@@ -50,4 +55,3 @@ class SupplierDetailView(APIView):
     def delete(self, request, pk):
         services.delete_supplier(pk)
         return Response(status=status.HTTP_204_NO_CONTENT)
-

@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.purchase_orders import services
-from apps.purchase_orders.serializers import CancelSerializer, PurchaseOrderOutputSerializer, PurchaseOrderReceiveSerializer, PurchaseOrderSerializer
+from apps.purchase_orders.serializers import PurchaseOrderCancelSerializer, PurchaseOrderOutputSerializer, PurchaseOrderReceiveSerializer, PurchaseOrderSerializer
 from core.pagination import StandardResultsPagination
 from core.permissions import IsProcurementManagerOrAdmin, IsWarehouseManagerOrAdmin, IsWarehouseManagerOrAdminOrStaff
 
@@ -14,6 +14,7 @@ class PurchaseOrderListCreateView(APIView):
     """List purchase orders or create a draft purchase order."""
 
     pagination_class = StandardResultsPagination
+    serializer_class = PurchaseOrderSerializer
 
     def get_permissions(self):
         if self.request.method == "POST":
@@ -37,6 +38,7 @@ class PurchaseOrderSubmitView(APIView):
     """Submit a draft purchase order for approval."""
 
     permission_classes = [IsProcurementManagerOrAdmin]
+    serializer_class = PurchaseOrderOutputSerializer
 
     @extend_schema(request=None, responses=PurchaseOrderOutputSerializer)
     def post(self, request, pk):
@@ -47,6 +49,7 @@ class PurchaseOrderApproveView(APIView):
     """Approve a pending purchase order."""
 
     permission_classes = [IsWarehouseManagerOrAdmin]
+    serializer_class = PurchaseOrderOutputSerializer
 
     @extend_schema(request=None, responses=PurchaseOrderOutputSerializer)
     def post(self, request, pk):
@@ -58,6 +61,7 @@ class PurchaseOrderReceiveView(APIView):
     """Receive goods for a purchase order."""
 
     permission_classes = [IsWarehouseManagerOrAdminOrStaff]
+    serializer_class = PurchaseOrderReceiveSerializer
 
     @extend_schema(request=PurchaseOrderReceiveSerializer, responses=PurchaseOrderOutputSerializer)
     def post(self, request, pk):
@@ -71,11 +75,11 @@ class PurchaseOrderCancelView(APIView):
     """Cancel a purchase order when permitted."""
 
     permission_classes = [IsProcurementManagerOrAdmin]
+    serializer_class = PurchaseOrderCancelSerializer
 
-    @extend_schema(request=CancelSerializer, responses=PurchaseOrderOutputSerializer)
+    @extend_schema(request=PurchaseOrderCancelSerializer, responses=PurchaseOrderOutputSerializer)
     def post(self, request, pk):
-        serializer = CancelSerializer(data=request.data)
+        serializer = PurchaseOrderCancelSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         purchase_order = services.cancel_purchase_order(pk, serializer.validated_data.get("reason"))
         return Response(PurchaseOrderOutputSerializer(purchase_order).data, status=status.HTTP_200_OK)
-

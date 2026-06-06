@@ -1,4 +1,5 @@
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated
@@ -24,6 +25,7 @@ class ProductListCreateView(GenericAPIView):
             return [IsWarehouseManagerOrAdmin()]
         return [IsAuthenticated()]
 
+    @extend_schema(operation_id="product_list")
     def get(self, request):
         queryset = services.list_products(self.filter_queryset(self.get_queryset()))
         page = self.paginate_queryset(queryset)
@@ -43,6 +45,6 @@ class ProductDetailView(GenericAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ProductDetailSerializer
 
+    @extend_schema(operation_id="product_retrieve")
     def get(self, request, pk):
         return Response(self.get_serializer(services.get_product_with_inventory(pk)).data, status=status.HTTP_200_OK)
-

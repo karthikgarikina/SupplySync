@@ -55,5 +55,5 @@ class SalesOrderOutputSerializer(serializers.Serializer):
     updated_at = serializers.DateTimeField(read_only=True)
 
 
-class CancelSerializer(serializers.Serializer):
+class SalesOrderCancelSerializer(serializers.Serializer):
     reason = serializers.CharField(required=False, allow_blank=True, allow_null=True)

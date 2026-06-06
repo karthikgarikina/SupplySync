@@ -18,6 +18,5 @@ class CategoryTreeSerializer(serializers.Serializer):
     description = serializers.CharField(read_only=True, allow_null=True)
     children = serializers.SerializerMethodField()
 
-    def get_children(self, obj):
+    def get_children(self, obj) -> list:
         return CategoryTreeSerializer(obj.children.filter(is_deleted=False), many=True).data
-

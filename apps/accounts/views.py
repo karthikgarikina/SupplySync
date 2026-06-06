@@ -14,6 +14,7 @@ class RegisterView(APIView):
     """Create a new SupplySync user account and return JWT tokens."""
 
     permission_classes = [AllowAny]
+    serializer_class = RegisterSerializer
 
     @extend_schema(request=RegisterSerializer)
     def post(self, request):
@@ -28,6 +29,7 @@ class LoginView(APIView):
 
     permission_classes = [AllowAny]
     throttle_classes = [LoginRateLimitThrottle]
+    serializer_class = LoginSerializer
 
     @extend_schema(request=LoginSerializer)
     def post(self, request):
@@ -47,6 +49,7 @@ class LogoutView(APIView):
     """Blacklist a refresh token for the authenticated user."""
 
     permission_classes = [IsAuthenticated]
+    serializer_class = LogoutSerializer
 
     @extend_schema(request=LogoutSerializer)
     def post(self, request):
@@ -60,6 +63,7 @@ class ChangePasswordView(APIView):
     """Change the authenticated user's password."""
 
     permission_classes = [IsAuthenticated]
+    serializer_class = ChangePasswordSerializer
 
     @extend_schema(request=ChangePasswordSerializer)
     def post(self, request):
@@ -77,4 +81,3 @@ class RefreshTokenView(TokenRefreshView):
     """Issue a new access token from a valid refresh token."""
 
     permission_classes = [AllowAny]
-

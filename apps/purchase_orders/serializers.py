@@ -62,5 +62,5 @@ class PurchaseOrderReceiveSerializer(serializers.Serializer):
     actual_delivery_date = serializers.DateField(required=False, allow_null=True)
 
 
-class CancelSerializer(serializers.Serializer):
+class PurchaseOrderCancelSerializer(serializers.Serializer):
     reason = serializers.CharField(required=False, allow_blank=True, allow_null=True)

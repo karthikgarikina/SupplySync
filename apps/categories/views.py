@@ -13,6 +13,7 @@ class CategoryListCreateView(APIView):
     """List categories or create a category."""
 
     pagination_class = StandardResultsPagination
+    serializer_class = CategorySerializer
 
     def get_permissions(self):
         if self.request.method == "POST":
@@ -36,8 +37,8 @@ class CategoryTreeView(APIView):
     """Return the full recursive category hierarchy."""
 
     permission_classes = [IsAuthenticated]
+    serializer_class = CategoryTreeSerializer
 
     def get(self, request):
         serializer = CategoryTreeSerializer(services.get_category_tree(), many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
