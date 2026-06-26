@@ -4,7 +4,7 @@ from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
 
-from apps.accounts.models import User
+from apps.accounts.models import User, UserRole
 from apps.inventory.models import TransactionType
 from apps.inventory.services import adjust_inventory
 from apps.products.models import Product
@@ -80,6 +80,7 @@ def create_purchase_order(data: dict, created_by_user_id: int) -> PurchaseOrder:
             notes=data.get("notes"),
         )
         _create_items(purchase_order, items)
+    cache.delete(constants.CACHE_KEY_REPORTS_DASHBOARD)
     return purchase_order
 
 
@@ -97,6 +98,7 @@ def submit_purchase_order(po_id: int) -> PurchaseOrder:
         raise InvalidOperationException("Purchase order cannot be submitted.", code=constants.ERROR_INVALID_OPERATION)
     purchase_order.status = PurchaseOrderStatus.PENDING_APPROVAL
     purchase_order.save(update_fields=["status", "updated_at"])
+    cache.delete(constants.CACHE_KEY_REPORTS_DASHBOARD)
     return purchase_order
 
 
@@ -109,17 +111,22 @@ def approve_purchase_order(po_id: int, approved_by_user_id: int) -> PurchaseOrde
             "Self approval is not allowed.",
             code=constants.ERROR_SELF_APPROVAL_NOT_ALLOWED,
         )
+    if approved_by.role not in {UserRole.ADMIN, UserRole.WAREHOUSE_MANAGER}:
+        raise BusinessPermissionException("Permission denied.", code=constants.ERROR_PERMISSION_DENIED)
     if purchase_order.status != PurchaseOrderStatus.PENDING_APPROVAL:
         raise InvalidOperationException("Purchase order is not pending approval.", code=constants.ERROR_INVALID_OPERATION)
     purchase_order.status = PurchaseOrderStatus.APPROVED
     purchase_order.approved_by = approved_by
     purchase_order.save(update_fields=["status", "approved_by", "updated_at"])
+    cache.delete(constants.CACHE_KEY_REPORTS_DASHBOARD)
     return purchase_order
 
 
 def receive_purchase_order(po_id: int, data: dict, performed_by_user_id: int) -> PurchaseOrder:
     """Receive purchase order items and post inbound inventory adjustments."""
     purchase_order = _get_purchase_order(po_id)
+    if purchase_order.status not in {PurchaseOrderStatus.APPROVED, PurchaseOrderStatus.PARTIALLY_RECEIVED}:
+        raise InvalidOperationException("Purchase order cannot be received.", code=constants.ERROR_INVALID_OPERATION)
     with transaction.atomic():
         for received_item in data["items"]:
             try:
@@ -145,7 +152,8 @@ def receive_purchase_order(po_id: int, data: dict, performed_by_user_id: int) ->
         all_received = all(item.quantity_received >= item.quantity_ordered for item in purchase_order.items.all())
         purchase_order.status = PurchaseOrderStatus.RECEIVED if all_received else PurchaseOrderStatus.PARTIALLY_RECEIVED
         purchase_order.save(update_fields=["actual_delivery_date", "status", "updated_at"])
-    process_purchase_order_received_event.delay(purchase_order.id, performed_by_user_id)
+    transaction.on_commit(lambda: cache.delete(constants.CACHE_KEY_REPORTS_DASHBOARD))
+    transaction.on_commit(lambda: process_purchase_order_received_event.delay(purchase_order.id, performed_by_user_id))
     return purchase_order
 
 
@@ -166,5 +174,5 @@ def cancel_purchase_order(po_id: int, reason: str) -> PurchaseOrder:
     if reason:
         purchase_order.notes = f"{purchase_order.notes or ''}\nCancellation reason: {reason}".strip()
     purchase_order.save(update_fields=["status", "notes", "updated_at"])
+    cache.delete(constants.CACHE_KEY_REPORTS_DASHBOARD)
     return purchase_order
-

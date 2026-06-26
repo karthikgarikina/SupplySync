@@ -37,17 +37,18 @@ def test_adjust_inventory_raises_exception_when_outbound_exceeds_available(db, s
         )
 
 
-def test_adjust_inventory_dispatches_celery_task_on_success(db, sample_inventory, staff_user, mocker):
+def test_adjust_inventory_dispatches_celery_task_on_success(db, sample_inventory, staff_user, mocker, django_capture_on_commit_callbacks):
     mocked_delay = mocker.patch("apps.inventory.services.process_inventory_updated_event.delay")
-    adjust_inventory(
-        {
-            "product_id": sample_inventory.product_id,
-            "warehouse_id": sample_inventory.warehouse_id,
-            "transaction_type": TransactionType.INBOUND,
-            "quantity": 1,
-        },
-        staff_user.id,
-    )
+    with django_capture_on_commit_callbacks(execute=True):
+        adjust_inventory(
+            {
+                "product_id": sample_inventory.product_id,
+                "warehouse_id": sample_inventory.warehouse_id,
+                "transaction_type": TransactionType.INBOUND,
+                "quantity": 1,
+            },
+            staff_user.id,
+        )
     mocked_delay.assert_called_once()
 
 
@@ -104,4 +105,3 @@ def test_get_low_stock_alerts_returns_products_below_reorder_level(db, sample_in
     alerts = get_low_stock_alerts()
     assert alerts[0]["product_id"] == sample_inventory.product_id
     assert alerts[0]["deficit"] == 5
-

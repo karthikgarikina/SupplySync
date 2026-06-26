@@ -83,8 +83,9 @@ def adjust_inventory(data: dict, performed_by_user_id: int) -> InventoryTransact
             notes=data.get("notes"),
         )
 
-    cache.delete(constants.CACHE_KEY_INVENTORY_LOW_STOCK)
-    process_inventory_updated_event.delay(product.id, warehouse.id, transaction_type, quantity)
+    transaction.on_commit(lambda: cache.delete(constants.CACHE_KEY_INVENTORY_LOW_STOCK))
+    transaction.on_commit(lambda: cache.delete(constants.CACHE_KEY_REPORTS_DASHBOARD))
+    transaction.on_commit(lambda: process_inventory_updated_event.delay(product.id, warehouse.id, transaction_type, quantity))
     return inventory_transaction
 
 
@@ -125,8 +126,9 @@ def transfer_inventory(data: dict, performed_by_user_id: int) -> dict:
             notes=data.get("notes"),
         )
 
-    cache.delete(constants.CACHE_KEY_INVENTORY_LOW_STOCK)
-    process_inventory_transfer_event.delay(product.id, source_warehouse.id, destination_warehouse.id, quantity)
+    transaction.on_commit(lambda: cache.delete(constants.CACHE_KEY_INVENTORY_LOW_STOCK))
+    transaction.on_commit(lambda: cache.delete(constants.CACHE_KEY_REPORTS_DASHBOARD))
+    transaction.on_commit(lambda: process_inventory_transfer_event.delay(product.id, source_warehouse.id, destination_warehouse.id, quantity))
     return {
         "reference_id": reference_id,
         "source_transaction": source_transaction,
@@ -200,4 +202,3 @@ def get_warehouse_inventory(warehouse_id: int):
         }
         for row in rows
     ]
-

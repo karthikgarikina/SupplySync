@@ -65,9 +65,11 @@ def test_approve_purchase_order_raises_exception_when_status_is_not_pending_appr
         approve_purchase_order(purchase_order.id, warehouse_manager_user.id)
 
 
-def test_receive_purchase_order_updates_inventory_for_received_items(db, sample_supplier, sample_warehouse, sample_product, procurement_manager_user, staff_user):
+def test_receive_purchase_order_updates_inventory_for_received_items(db, sample_supplier, sample_warehouse, sample_product, procurement_manager_user, warehouse_manager_user, staff_user):
     inventory = Inventory.objects.create(product=sample_product, warehouse=sample_warehouse, quantity_available=0)
     purchase_order = create_purchase_order(_purchase_order_data(sample_supplier, sample_warehouse, sample_product, quantity=5), procurement_manager_user.id)
+    submit_purchase_order(purchase_order.id)
+    approve_purchase_order(purchase_order.id, warehouse_manager_user.id)
     item = purchase_order.items.first()
     receive_purchase_order(
         purchase_order.id,
@@ -78,7 +80,7 @@ def test_receive_purchase_order_updates_inventory_for_received_items(db, sample_
     assert inventory.quantity_available == 5
 
 
-def test_receive_purchase_order_sets_status_to_partially_received_when_not_all_items_received(db, sample_supplier, sample_warehouse, sample_product, procurement_manager_user):
+def test_receive_purchase_order_sets_status_to_partially_received_when_not_all_items_received(db, sample_supplier, sample_warehouse, sample_product, procurement_manager_user, warehouse_manager_user):
     from apps.accounts.models import UserRole
 
     receiver = procurement_manager_user
@@ -86,6 +88,8 @@ def test_receive_purchase_order_sets_status_to_partially_received_when_not_all_i
     receiver.save()
     Inventory.objects.create(product=sample_product, warehouse=sample_warehouse, quantity_available=0)
     purchase_order = create_purchase_order(_purchase_order_data(sample_supplier, sample_warehouse, sample_product, quantity=10), procurement_manager_user.id)
+    submit_purchase_order(purchase_order.id)
+    approve_purchase_order(purchase_order.id, warehouse_manager_user.id)
     item = purchase_order.items.first()
     receive_purchase_order(
         purchase_order.id,
@@ -96,7 +100,7 @@ def test_receive_purchase_order_sets_status_to_partially_received_when_not_all_i
     assert purchase_order.status == PurchaseOrderStatus.PARTIALLY_RECEIVED
 
 
-def test_cancel_purchase_order_raises_exception_when_status_is_received(db, sample_supplier, sample_warehouse, procurement_manager_user):
+def test_cancel_purchase_order_raises_exception_when_status_is_received(db, sample_supplier, sample_warehouse, procurement_manager_user, warehouse_manager_user):
     from apps.categories.models import Category
     from apps.products.models import Product
 
@@ -110,6 +114,8 @@ def test_cancel_purchase_order_raises_exception_when_status_is_received(db, samp
     )
     Inventory.objects.create(product=product, warehouse=sample_warehouse, quantity_available=0)
     purchase_order = create_purchase_order(_purchase_order_data(sample_supplier, sample_warehouse, product, quantity=3), procurement_manager_user.id)
+    submit_purchase_order(purchase_order.id)
+    approve_purchase_order(purchase_order.id, warehouse_manager_user.id)
     item = purchase_order.items.first()
     receive_purchase_order(
         purchase_order.id,
@@ -118,4 +124,3 @@ def test_cancel_purchase_order_raises_exception_when_status_is_received(db, samp
     )
     with pytest.raises(InvalidOperationException):
         cancel_purchase_order(purchase_order.id, "cannot cancel")
-

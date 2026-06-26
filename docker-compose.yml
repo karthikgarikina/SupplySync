@@ -29,7 +29,6 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
       REDIS_URL: redis://redis:6379/0
-      REDIS_CACHE_URL: redis://redis:6379/1
 
   celery_beat:
     build: .
@@ -45,8 +44,6 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
       REDIS_URL: redis://redis:6379/0
-      REDIS_CACHE_URL: redis://redis:6379/1
 
 volumes:
   postgres_data:
-

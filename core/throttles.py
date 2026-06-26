@@ -15,6 +15,9 @@ class LoginRateLimitThrottle(SimpleRateThrottle):
         attempts = cache.get(self.key, 0)
         return attempts < constants.LOGIN_RATE_LIMIT_MAX_ATTEMPTS
 
+    def wait(self):
+        return None
+
     def register_failure(self, request):
         key = constants.CACHE_KEY_LOGIN_RATE_LIMIT.format(ip_address=self.get_ident(request))
         cache.add(key, 0, timeout=constants.LOGIN_RATE_LIMIT_TTL)
@@ -27,4 +30,3 @@ class LoginRateLimitThrottle(SimpleRateThrottle):
     def clear(self, request):
         key = constants.CACHE_KEY_LOGIN_RATE_LIMIT.format(ip_address=self.get_ident(request))
         cache.delete(key)
-

@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
 
@@ -108,7 +109,8 @@ def create_sales_order(data: dict, created_by_user_id: int) -> SalesOrder:
         sales_order.total_amount = total_amount
         sales_order.save(update_fields=["total_amount", "updated_at"])
 
-    process_sales_order_created_event.delay(sales_order.id, created_by_user_id)
+    transaction.on_commit(lambda: cache.delete(constants.CACHE_KEY_REPORTS_DASHBOARD))
+    transaction.on_commit(lambda: process_sales_order_created_event.delay(sales_order.id, created_by_user_id))
     return sales_order
 
 
@@ -142,6 +144,7 @@ def dispatch_sales_order(so_id: int) -> SalesOrder:
         sales_order.status = SalesOrderStatus.DISPATCHED
         sales_order.dispatched_at = timezone.now()
         sales_order.save(update_fields=["status", "dispatched_at", "updated_at"])
+    transaction.on_commit(lambda: cache.delete(constants.CACHE_KEY_REPORTS_DASHBOARD))
     return sales_order
 
 
@@ -153,6 +156,7 @@ def deliver_sales_order(so_id: int) -> SalesOrder:
     sales_order.status = SalesOrderStatus.DELIVERED
     sales_order.delivered_at = timezone.now()
     sales_order.save(update_fields=["status", "delivered_at", "updated_at"])
+    cache.delete(constants.CACHE_KEY_REPORTS_DASHBOARD)
     return sales_order
 
 
@@ -175,6 +179,6 @@ def cancel_sales_order(so_id: int, reason: str) -> SalesOrder:
         if reason:
             sales_order.notes = f"{sales_order.notes or ''}\nCancellation reason: {reason}".strip()
         sales_order.save(update_fields=["status", "notes", "updated_at"])
-    process_sales_order_cancelled_event.delay(sales_order.id)
+    transaction.on_commit(lambda: cache.delete(constants.CACHE_KEY_REPORTS_DASHBOARD))
+    transaction.on_commit(lambda: process_sales_order_cancelled_event.delay(sales_order.id))
     return sales_order
-

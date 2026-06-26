@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 from apps.purchase_orders import services
 from apps.purchase_orders.serializers import PurchaseOrderCancelSerializer, PurchaseOrderOutputSerializer, PurchaseOrderReceiveSerializer, PurchaseOrderSerializer
 from core.pagination import StandardResultsPagination
-from core.permissions import IsProcurementManagerOrAdmin, IsWarehouseManagerOrAdmin, IsWarehouseManagerOrAdminOrStaff
+from core.permissions import IsProcurementManagerOrAdmin, IsWarehouseManagerOrAdminOrStaff
 
 
 class PurchaseOrderListCreateView(APIView):
@@ -48,7 +48,7 @@ class PurchaseOrderSubmitView(APIView):
 class PurchaseOrderApproveView(APIView):
     """Approve a pending purchase order."""
 
-    permission_classes = [IsWarehouseManagerOrAdmin]
+    permission_classes = [IsAuthenticated]
     serializer_class = PurchaseOrderOutputSerializer
 
     @extend_schema(request=None, responses=PurchaseOrderOutputSerializer)

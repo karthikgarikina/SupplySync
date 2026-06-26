@@ -105,17 +105,24 @@ SIMPLE_JWT = {
     "SIGNING_KEY": SECRET_KEY,
 }
 
-CELERY_BROKER_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TIMEZONE = "Asia/Kolkata"
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": os.environ.get("REDIS_CACHE_URL", "redis://localhost:6379/1"),
+        "LOCATION": REDIS_URL,
+        "OPTIONS": {
+            "socket_connect_timeout": float(os.environ.get("REDIS_SOCKET_CONNECT_TIMEOUT", "2")),
+            "socket_timeout": float(os.environ.get("REDIS_SOCKET_TIMEOUT", "2")),
+        },
     }
 }
 
